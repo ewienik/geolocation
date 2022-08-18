@@ -10,3 +10,8 @@ Cargo.lock
 **/*.rs.bk
 
 database.csv
+
+
+# Added by cargo
+
+/target
