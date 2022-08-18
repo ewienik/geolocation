@@ -1,4 +1,6 @@
+mod build;
 mod check;
+mod run;
 
 use {
     clap::{Parser, Subcommand},
@@ -23,6 +25,6 @@ fn main() {
     let args = Args::parse();
     match args.command {
         Some(Command::Check) => check::check(args.database),
-        _ => {}
+        None => run::run(args.database),
     }
 }
