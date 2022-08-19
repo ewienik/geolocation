@@ -1,21 +1,15 @@
-use std::{io, net::Ipv4Addr, path::PathBuf, str::FromStr};
+use {
+    crate::db::Db,
+    std::{
+        io::{self, Write},
+        net::Ipv4Addr,
+        path::PathBuf,
+        str::FromStr,
+    },
+};
 
-fn load(_path: PathBuf) -> bool {
-    let line = if let Some(line) = io::stdin().lines().map(|l| l.unwrap()).next() {
-        line
-    } else {
-        return false;
-    };
-    let result = match line.as_str() {
-        "LOAD" => true,
-        "EXIT" => false,
-        _ => panic!("UNKNOWN COMMAND"),
-    };
-    println!("OK");
-    result
-}
-
-fn lookup() {
+pub(crate) fn run(db: &mut impl Db, path: PathBuf) {
+    println!("READY");
     io::stdin()
         .lines()
         .map(|l| l.unwrap())
@@ -27,6 +21,17 @@ fn lookup() {
             _ => true,
         })
         .for_each(|line| {
+            if line == "LOAD" {
+                println!(
+                    "{}",
+                    match db.load(&path) {
+                        Ok(()) => "OK",
+                        Err(_) => "ERR",
+                    }
+                );
+                io::stdout().flush().unwrap();
+                return;
+            }
             if !line.starts_with("LOOKUP") {
                 panic!("UNKNOWN COMMAND");
             }
@@ -35,16 +40,15 @@ fn lookup() {
                 return;
             }
             match Ipv4Addr::from_str(&line[7..]) {
-                Ok(addr) => println!("{addr:?}"),
+                Ok(addr) => println!(
+                    "{}",
+                    match db.lookup(&addr) {
+                        Ok(result) => result,
+                        Err(_) => "ERR",
+                    }
+                ),
                 Err(_) => println!("ERR"),
             }
+            io::stdout().flush().unwrap();
         });
-}
-
-pub(crate) fn run(path: PathBuf) {
-    println!("READY");
-    if !load(path) {
-        return;
-    }
-    lookup();
 }

@@ -1,9 +1,12 @@
 mod build;
 mod check;
+mod db;
+mod dummy;
 mod run;
 
 use {
     clap::{Parser, Subcommand},
+    dummy::Dummy,
     std::path::PathBuf,
 };
 
@@ -23,8 +26,9 @@ enum Command {
 
 fn main() {
     let args = Args::parse();
+    let mut db = Dummy::new();
     match args.command {
         Some(Command::Check) => check::check(args.database),
-        None => run::run(args.database),
+        None => run::run(&mut db, args.database),
     }
 }
