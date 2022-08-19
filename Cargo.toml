@@ -7,3 +7,6 @@ edition = "2021"
 anyhow = "1"
 clap = { version = "3", features = ["derive"] }
 csv = "1"
+
+[features]
+dummy = []

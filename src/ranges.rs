@@ -6,10 +6,28 @@ use {
 };
 
 struct Ip {
-    ip: Ipv4Addr,
-    end: bool,
-    my: usize,
-    parent: usize,
+    ip: u32,
+    my: u32,
+    parent: u32,
+}
+
+impl Ip {
+    fn new(ip: u32, end: bool, city: u32) -> Self {
+        let end = if end { 0x80000000 } else { 0 };
+        Self {
+            ip,
+            my: (city & 0x7fffffff) | end,
+            parent: city,
+        }
+    }
+
+    fn end(&self) -> bool {
+        (self.my & 0x80000000) != 0
+    }
+
+    fn my(&self) -> u32 {
+        self.my & 0x7fffffff
+    }
 }
 
 pub(crate) struct Ranges {
@@ -35,6 +53,14 @@ impl Db for Ranges {
             .map(|record| format!("{},{}", record.get(2).unwrap(), record.get(5).unwrap()))
             .collect();
         self.cities = cities.into_iter().collect();
+        /*
+        println!(
+            "sizeof of Ip: {}, cities: {:#08x}, max len: {}",
+            std::mem::size_of::<Ip>(),
+            self.cities.len(),
+            self.cities.iter().map(|v| v.len()).max().unwrap()
+        );
+        */
         self.ips.clear();
         Reader::from_path(&path)
             .unwrap()
@@ -47,25 +73,15 @@ impl Db for Ranges {
                     format!("{},{}", record.get(2).unwrap(), record.get(5).unwrap(),),
                 )
             })
-            .map(|(ip_from, ip_to, city)| (Ipv4Addr::from(ip_from), Ipv4Addr::from(ip_to), city))
-            .map(|(ip_from, ip_to, city)| {
-                (ip_from, ip_to, self.cities.binary_search(&city).unwrap())
-            })
             .map(|(ip_from, ip_to, city)| {
                 (
-                    Ip {
-                        ip: ip_from,
-                        end: false,
-                        my: city,
-                        parent: city,
-                    },
-                    Ip {
-                        ip: ip_to,
-                        end: true,
-                        my: city,
-                        parent: city,
-                    },
+                    ip_from,
+                    ip_to,
+                    self.cities.binary_search(&city).unwrap() as u32,
                 )
+            })
+            .map(|(ip_from, ip_to, city)| {
+                (Ip::new(ip_from, false, city), Ip::new(ip_to, true, city))
             })
             .for_each(|(mut ip_from, mut ip_to)| {
                 match self.ips.binary_search_by(|ip| ip.ip.cmp(&ip_from.ip)) {
@@ -73,7 +89,7 @@ impl Db for Ranges {
                     Err(it) => {
                         match self.ips.get(it) {
                             Some(ip) => {
-                                if ip.end {
+                                if ip.end() {
                                     ip_from.parent = ip.my;
                                     ip_to.parent = ip.my;
                                 } else {
@@ -95,10 +111,10 @@ impl Db for Ranges {
         self.ips
             .get(
                 self.ips
-                    .binary_search_by(|check| check.ip.cmp(&ip))
+                    .binary_search_by(|check| check.ip.cmp(&u32::from_be_bytes(ip.octets())))
                     .unwrap_or_else(|it| it),
             )
-            .map(|ip| self.cities.get(ip.my))
+            .map(|ip| self.cities.get(ip.my() as usize))
             .flatten()
             .map(|city| city.as_str())
             .ok_or(anyhow::anyhow!("not found"))
