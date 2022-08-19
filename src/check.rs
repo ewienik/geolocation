@@ -1,4 +1,7 @@
-use {csv::Reader, std::path::PathBuf};
+use {
+    csv::Reader,
+    std::{collections::HashSet, path::PathBuf},
+};
 
 pub(crate) fn check(path: PathBuf) {
     println!(
@@ -172,5 +175,38 @@ pub(crate) fn check(path: PathBuf) {
             .filter(|(v1, v2): &(u32, u32)| *v1 & 0xff000000 != *v2 & 0xff000000)
             .inspect(|(v1, v2)| println!("{v1:#08x} -> {v2:#08x}"))
             .count()
+    );
+    println!(
+        "number of different 'ip from': {}",
+        Reader::from_path(&path)
+            .unwrap()
+            .records()
+            .map(|v| v.unwrap())
+            .map(|v| v.get(0).unwrap().parse::<u32>().unwrap())
+            .collect::<HashSet<_>>()
+            .len()
+    );
+    println!(
+        "number of different 'ip to': {}",
+        Reader::from_path(&path)
+            .unwrap()
+            .records()
+            .map(|v| v.unwrap())
+            .map(|v| v.get(1).unwrap().parse::<u32>().unwrap())
+            .collect::<HashSet<_>>()
+            .len()
+    );
+    println!(
+        "number of different ip: {}",
+        Reader::from_path(&path)
+            .unwrap()
+            .records()
+            .map(|v| v.unwrap())
+            .flat_map(|v| [
+                v.get(0).unwrap().parse::<u32>().unwrap(),
+                v.get(1).unwrap().parse::<u32>().unwrap()
+            ])
+            .collect::<HashSet<_>>()
+            .len()
     );
 }

@@ -1,12 +1,14 @@
 mod build;
 mod check;
 mod db;
+#[cfg(feature = "dummy")]
 mod dummy;
+#[cfg(not(feature = "dummy"))]
+mod ranges;
 mod run;
 
 use {
     clap::{Parser, Subcommand},
-    dummy::Dummy,
     std::path::PathBuf,
 };
 
@@ -26,7 +28,10 @@ enum Command {
 
 fn main() {
     let args = Args::parse();
-    let mut db = Dummy::new();
+    #[cfg(feature = "dummy")]
+    let mut db = dummy::Dummy::new();
+    #[cfg(not(feature = "dummy"))]
+    let mut db = ranges::Ranges::new();
     match args.command {
         Some(Command::Check) => check::check(args.database),
         None => run::run(&mut db, args.database),
