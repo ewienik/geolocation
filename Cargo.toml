@@ -4,9 +4,25 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1"
-clap = { version = "3", features = ["derive"] }
-csv = "1"
+csv = { version = "1", optional = true }
 
 [features]
-dummy = []
+build-csv = ["csv"]
+
+[[bin]]
+name = "geoloc"
+path = "src/main.rs"
+
+[[bin]]
+name = "geoloc-convert"
+path = "src/convert.rs"
+required-features = ["build-csv"]
+
+[[bin]]
+name = "geoloc-check"
+path = "src/check.rs"
+required-features = ["build-csv"]
+
+[[bin]]
+name = "geoloc-dummy"
+path = "src/dummy.rs"

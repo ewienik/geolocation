@@ -1,4 +1,12 @@
-use std::{net::Ipv4Addr, path::Path, str::FromStr};
+mod run;
+
+use std::{
+    env,
+    net::Ipv4Addr,
+    path::{Path, PathBuf},
+    process,
+    str::FromStr,
+};
 
 pub(crate) struct Load {}
 
@@ -7,8 +15,8 @@ impl Load {
         Self {}
     }
 
-    pub(crate) fn load(&self, _path: &Path) -> bool {
-        true
+    pub(crate) fn load(&self, _path: &Path) -> Option<()> {
+        Some(())
     }
 
     pub(crate) fn lookup(&self) -> Option<Lookup> {
@@ -17,7 +25,7 @@ impl Load {
 }
 
 pub(crate) struct Lookup {
-    data: Vec<(Ipv4Addr, &'static str)>,
+    data: [(Ipv4Addr, &'static str); 10],
 }
 
 impl Lookup {
@@ -40,9 +48,7 @@ impl Lookup {
                 ),
                 (Ipv4Addr::from_str("5.44.16.0").unwrap(), "GB,Hastings"),
                 (Ipv4Addr::from_str("8.24.99.0").unwrap(), "US,Hastings"),
-            ]
-            .into_iter()
-            .collect(),
+            ],
         }
     }
 
@@ -52,4 +58,16 @@ impl Lookup {
             .find(|(check, _)| check == ip)
             .map(|(_, v)| *v)
     }
+}
+
+fn main() {
+    let database = {
+        let mut args: Vec<String> = env::args().collect();
+        if args.len() < 2 {
+            println!("usage: args[0] database_path");
+            process::exit(1);
+        }
+        PathBuf::from(args.remove(1))
+    };
+    run::run(Load::new(), database);
 }

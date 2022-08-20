@@ -1,10 +1,12 @@
+mod db;
+
 use {
-    crate::db::{City, Ip},
     csv::Reader,
-    std::{collections::HashSet, path::PathBuf},
+    db::{City, Ip},
+    std::{collections::HashSet, env, path::PathBuf, process},
 };
 
-pub(crate) fn check(path: PathBuf) {
+fn check(path: PathBuf) {
     println!(
         "number of elements: {}",
         Reader::from_path(&path).unwrap().records().count()
@@ -225,4 +227,16 @@ pub(crate) fn check(path: PathBuf) {
         std::mem::size_of::<Ip>(),
         std::mem::size_of::<City>(),
     );
+}
+
+fn main() {
+    let database = {
+        let mut args: Vec<String> = env::args().collect();
+        if args.len() < 2 {
+            println!("usage: args[0] database_path");
+            process::exit(1);
+        }
+        PathBuf::from(args.remove(1))
+    };
+    check(database);
 }

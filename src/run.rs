@@ -22,7 +22,7 @@ fn load(db: &mut Load, path: &Path) -> bool {
         .find_map(|line| {
             match line.as_str() {
                 "LOAD" => {
-                    if db.load(&path) {
+                    if db.load(&path).is_some() {
                         return Some(());
                     }
                 }
