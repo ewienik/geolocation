@@ -1,5 +1,6 @@
 use std::{fs::File, io::Read, mem, net::Ipv4Addr, path::Path, slice};
 
+#[derive(Clone)]
 pub(crate) struct Ip {
     ip: u32,
     my: u32,
@@ -99,8 +100,8 @@ impl<'a> Lookup<'a> {
 }
 
 pub(crate) struct Load {
-    cities: Vec<u8>,
-    ips: Vec<u8>,
+    cities: Vec<City>,
+    ips: Vec<Ip>,
 }
 
 impl Load {
@@ -122,25 +123,25 @@ impl Load {
         };
         let cities_size = read_size()?;
         let ips_size = read_size()?;
-        self.cities = vec![0u8; cities_size * mem::size_of::<City>()];
-        self.ips = vec![0u8; ips_size * mem::size_of::<Ip>()];
-        (db.read(&mut self.cities).unwrap() == self.cities.len()).then(|| {})?;
-        (db.read(&mut self.ips).unwrap() == self.ips.len()).then(|| {})?;
+        self.cities = vec![City::new(""); cities_size];
+        self.ips = vec![Ip::new(0, false, 0); ips_size];
+        let cities_bytes = unsafe {
+            let ptr = mem::transmute::<*mut City, *mut u8>(self.cities.as_mut_ptr());
+            slice::from_raw_parts_mut(ptr, cities_size * mem::size_of::<City>())
+        };
+        let ips_bytes = unsafe {
+            let ptr = mem::transmute::<*mut Ip, *mut u8>(self.ips.as_mut_ptr());
+            slice::from_raw_parts_mut(ptr, ips_size * mem::size_of::<Ip>())
+        };
+        (db.read(cities_bytes).unwrap() == self.cities.len() * mem::size_of::<City>())
+            .then(|| {})?;
+        (db.read(ips_bytes).unwrap() == self.ips.len() * mem::size_of::<Ip>()).then(|| {})?;
         Some(())
     }
 
     #[allow(dead_code)]
     pub(crate) fn lookup(&self) -> Option<Lookup> {
-        (!self.cities.is_empty() & !self.ips.is_empty()).then(|| {
-            let cities = unsafe {
-                let ptr = mem::transmute::<*const u8, *const City>(self.cities.as_ptr());
-                slice::from_raw_parts(ptr, self.cities.len() / mem::size_of::<City>())
-            };
-            let ips = unsafe {
-                let ptr = mem::transmute::<*const u8, *const Ip>(self.ips.as_ptr());
-                slice::from_raw_parts(ptr, self.ips.len() / mem::size_of::<Ip>())
-            };
-            Lookup::new(cities, ips)
-        })
+        (!self.cities.is_empty() & !self.ips.is_empty())
+            .then(|| Lookup::new(&self.cities, &self.ips))
     }
 }
