@@ -20,14 +20,9 @@ fn load(db: &mut Load, path: &Path) -> bool {
             _ => true,
         })
         .find_map(|line| {
-            match line.as_str() {
-                "LOAD" => {
-                    if db.load(&path).is_some() {
-                        return Some(());
-                    }
-                }
-                _ => {}
-            };
+            if line == "LOAD" && db.load(path).is_some() {
+                return Some(());
+            }
             println!("ERR");
             None
         })

@@ -48,7 +48,7 @@ fn check(path: PathBuf) {
             .records()
             .map(|v| v.unwrap())
             .map(|v| v.get(0).unwrap().parse().unwrap(),)
-            .filter(|v: &u32| *v & 0xffffffff == 0)
+            .filter(|v: &u32| *v == 0)
             .count()
     );
     println!(
@@ -88,7 +88,7 @@ fn check(path: PathBuf) {
             .records()
             .map(|v| v.unwrap())
             .map(|v| v.get(1).unwrap().parse().unwrap(),)
-            .filter(|v: &u32| *v & 0xffffffff == 0xffffffff)
+            .filter(|v: &u32| *v == 0xffffffff)
             .count()
     );
     println!(

@@ -93,8 +93,7 @@ impl<'a> Lookup<'a> {
                     .binary_search_by(|check| check.ip.cmp(&u32::from_be_bytes(ip.octets())))
                     .unwrap_or_else(|it| it),
             )
-            .map(|ip| self.cities.get(ip.my() as usize))
-            .flatten()
+            .and_then(|ip| self.cities.get(ip.my() as usize))
             .map(|city| city.as_ref())
     }
 }
