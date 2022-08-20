@@ -1,10 +1,10 @@
 mod build;
+#[cfg(not(feature = "dummy"))]
 mod check;
+#[cfg(not(feature = "dummy"))]
 mod db;
 #[cfg(feature = "dummy")]
 mod dummy;
-#[cfg(not(feature = "dummy"))]
-mod ranges;
 mod run;
 
 use {
@@ -23,17 +23,20 @@ struct Args {
 
 #[derive(Subcommand)]
 enum Command {
+    #[cfg(not(feature = "dummy"))]
     Check,
 }
 
+#[cfg(not(feature = "dummy"))]
+use db::{Load, Lookup};
+#[cfg(feature = "dummy")]
+use dummy::{Load, Lookup};
+
 fn main() {
     let args = Args::parse();
-    #[cfg(feature = "dummy")]
-    let mut db = dummy::Dummy::new();
-    #[cfg(not(feature = "dummy"))]
-    let mut db = ranges::Ranges::new();
     match args.command {
+        #[cfg(not(feature = "dummy"))]
         Some(Command::Check) => check::check(args.database),
-        None => run::run(&mut db, args.database),
+        _ => run::run(Load::new(), args.database),
     }
 }

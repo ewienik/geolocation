@@ -1,15 +1,27 @@
-use {
-    crate::db::Db,
-    anyhow::Result,
-    std::{net::Ipv4Addr, path::Path, str::FromStr},
-};
+use std::{net::Ipv4Addr, path::Path, str::FromStr};
 
-pub(crate) struct Dummy<'a> {
-    data: Vec<(Ipv4Addr, &'a str)>,
+pub(crate) struct Load {}
+
+impl Load {
+    pub(crate) fn new() -> Self {
+        Self {}
+    }
+
+    pub(crate) fn load(&self, _path: &Path) -> bool {
+        true
+    }
+
+    pub(crate) fn lookup(&self) -> Option<Lookup> {
+        Some(Lookup::new())
+    }
 }
 
-impl Dummy<'_> {
-    pub(crate) fn new() -> Self {
+pub(crate) struct Lookup {
+    data: Vec<(Ipv4Addr, &'static str)>,
+}
+
+impl Lookup {
+    fn new() -> Self {
         Self {
             data: [
                 (Ipv4Addr::from_str("1.0.0.0").unwrap(), "US,Los Angeles"),
@@ -33,18 +45,11 @@ impl Dummy<'_> {
             .collect(),
         }
     }
-}
 
-impl Db for Dummy<'_> {
-    fn load(&mut self, _path: &Path) -> Result<()> {
-        Ok(())
-    }
-
-    fn lookup(&self, ip: &Ipv4Addr) -> Result<&str> {
+    pub(crate) fn lookup(&self, ip: &Ipv4Addr) -> Option<&str> {
         self.data
             .iter()
             .find(|(check, _)| check == ip)
             .map(|(_, v)| *v)
-            .ok_or(anyhow::anyhow!("not found"))
     }
 }

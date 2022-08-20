@@ -1,4 +1,5 @@
 use {
+    crate::db::{City, Ip},
     csv::Reader,
     std::{collections::HashSet, path::PathBuf},
 };
@@ -173,7 +174,6 @@ pub(crate) fn check(path: PathBuf) {
                 v.get(1).unwrap().parse().unwrap(),
             ))
             .filter(|(v1, v2): &(u32, u32)| *v1 & 0xff000000 != *v2 & 0xff000000)
-            .inspect(|(v1, v2)| println!("{v1:#08x} -> {v2:#08x}"))
             .count()
     );
     println!(
@@ -208,5 +208,21 @@ pub(crate) fn check(path: PathBuf) {
             ])
             .collect::<HashSet<_>>()
             .len()
+    );
+    let cities: HashSet<_> = Reader::from_path(&path)
+        .unwrap()
+        .records()
+        .map(|record| record.unwrap())
+        .map(|record| format!("{},{}", record.get(2).unwrap(), record.get(5).unwrap()))
+        .collect();
+    println!("number of different cities: {}", cities.len());
+    println!(
+        "number of max city len: {}",
+        cities.iter().map(|v| v.len()).max().unwrap()
+    );
+    println!(
+        "sizeof of Ip: {}, size of City: {}",
+        std::mem::size_of::<Ip>(),
+        std::mem::size_of::<City>(),
     );
 }
