@@ -1,4 +1,4 @@
-use std::{fs::File, io::Read, mem, net::Ipv4Addr, path::Path, slice};
+use std::{cmp, fs::File, io::Read, mem, net::Ipv4Addr, path::Path, slice};
 
 #[derive(Clone)]
 pub(crate) struct Ip {
@@ -57,7 +57,7 @@ impl City {
     #[allow(dead_code)]
     pub(crate) fn new(city: &str) -> Self {
         Self {
-            size: city.len() as u8,
+            size: cmp::min(MAX_CITY_LEN, city.len()) as u8,
             buf: city
                 .chars()
                 .map(|v| v as u8)
@@ -143,5 +143,50 @@ impl Load {
     pub(crate) fn lookup(&self) -> Option<Lookup> {
         (!self.cities.is_empty() & !self.ips.is_empty())
             .then(|| Lookup::new(&self.cities, &self.ips))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_ip() {
+        let mut ip = Ip::new(100, false, 20);
+        assert_eq!(ip.ip(), 100);
+        assert_eq!(ip.end(), false);
+        assert_eq!(ip.my(), 20);
+        assert_eq!(ip.parent(), 20);
+        ip.set_parent(30);
+        assert_eq!(ip.ip(), 100);
+        assert_eq!(ip.end(), false);
+        assert_eq!(ip.my(), 20);
+        assert_eq!(ip.parent(), 30);
+
+        let mut ip = Ip::new(100, true, 20);
+        assert_eq!(ip.ip(), 100);
+        assert_eq!(ip.end(), true);
+        assert_eq!(ip.my(), 20);
+        assert_eq!(ip.parent(), 20);
+        ip.set_parent(30);
+        assert_eq!(ip.ip(), 100);
+        assert_eq!(ip.end(), true);
+        assert_eq!(ip.my(), 20);
+        assert_eq!(ip.parent(), 30);
+    }
+
+    #[test]
+    fn new_city() {
+        let city = City::new("");
+        assert_eq!(city.size, 0);
+        let city = City::new("a");
+        assert_eq!(city.size, 1);
+        assert_eq!(city.as_ref(), "a");
+        let city = City::new("01234567890123");
+        assert_eq!(city.size, 14);
+        assert_eq!(city.as_ref(), "01234567890123");
+        let city = City::new("123456789012345");
+        assert_eq!(city.size, 14);
+        assert_eq!(city.as_ref(), "12345678901234");
     }
 }
